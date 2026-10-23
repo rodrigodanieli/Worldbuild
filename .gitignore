@@ -36,6 +36,9 @@ Thumbs.db
 
 # Storage & Temporary files
 uploads/
+data/
 tiles_cache/
 *.sqlite
 *.sqlite-journal
+*.db
+*.db-journal

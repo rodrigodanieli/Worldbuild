@@ -1,4 +1,7 @@
 services:
+  # =========================================================================
+  # 🏰 WorldBuild Hub - Aplicação Web Principal
+  # =========================================================================
   worldbuild:
     build:
       context: .
@@ -7,14 +10,48 @@ services:
     container_name: worldbuild-app
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "${PORT:-3000}:3000"
     environment:
       - NODE_ENV=production
       - PORT=3000
       - HOSTNAME=0.0.0.0
-      - DATABASE_URL=file:/app/packages/database/prisma/dev.db
+      - DATABASE_URL=${DATABASE_URL:-file:/app/packages/database/data/dev.db}
     volumes:
       # Persistência do banco de dados SQLite local
-      - ./packages/database/prisma/dev.db:/app/packages/database/prisma/dev.db
+      - ./data/db:/app/packages/database/data
       # Persistência de uploads de imagens e mídias
-      - ./apps/web/public/uploads:/app/apps/web/public/uploads
+      - ./data/uploads:/app/apps/web/public/uploads
+    # Depende do PostgreSQL se o perfil "postgres" for ativado
+    depends_on:
+      postgres:
+        condition: service_healthy
+        required: false
+
+  # =========================================================================
+  # 🐘 PostgreSQL - Opcional para Alta Concorrência / Multi-usuário
+  # Ativado com: docker compose --profile postgres up -d
+  # =========================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: worldbuild-postgres
+    restart: unless-stopped
+    profiles:
+      - postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-worldbuild}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-worldbuild_pass_123}
+      POSTGRES_DB: ${POSTGRES_DB:-worldbuild}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-worldbuild} -d ${POSTGRES_DB:-worldbuild}"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+      start_period: 3s
+
+volumes:
+  db:
+  uploads:
