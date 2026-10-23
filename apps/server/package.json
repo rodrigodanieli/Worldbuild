@@ -1,0 +1,27 @@
+{
+  "name": "@worldbuild/server",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@worldbuild/core": "workspace:*",
+    "@worldbuild/dnd-rules": "workspace:*",
+    "fastify": "^5.2.1",
+    "@fastify/cors": "^10.0.2",
+    "@fastify/websocket": "^11.0.2",
+    "yjs": "^13.6.23",
+    "y-websocket": "^2.1.0"
+  },
+  "devDependencies": {
+    "@worldbuild/tsconfig": "workspace:*",
+    "@types/node": "^22.13.4",
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3"
+  }
+}

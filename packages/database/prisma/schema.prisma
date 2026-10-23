@@ -1,0 +1,419 @@
+// Prisma Schema para WorldBuild Hub
+// Suporta isolamento multiusuário, personalizações por linha e compartilhamento granular.
+// Provider atual: SQLite (facilmente migrável para PostgreSQL via DATABASE_URL).
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ----------------------------------------------------
+// USUÁRIOS E PERSONALIZAÇÕES
+// ----------------------------------------------------
+
+model User {
+  id           String        @id @default(uuid())
+  email        String        @unique
+  passwordHash String
+  name         String
+  avatarUrl    String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  // Configurações personalizadas (1 linha por usuário com coluna settings)
+  settings     UserSettings?
+
+  // Recursos criados pelo usuário
+  worlds       World[]
+  pages        Page[]
+  pageAssets   PageAsset[]
+  cards        Card[]
+  cardAssets   CardAsset[]
+  projectMedia ProjectMedia[]
+
+  // Compartilhamentos recebidos por e-mail
+  sharedPages  PageShare[]
+  sharedWorlds WorldShare[]
+}
+
+model UserSettings {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Coluna única de personalização armazenando o estado em JSON
+  // (tema, fontes preferidas, layout do editor, atalhos, modo DM padrão)
+  settings  String   @default("{\"theme\":\"dark\",\"showDmSecrets\":true,\"editorFontSize\":\"normal\"}")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ----------------------------------------------------
+// MUNDOS E COMPARTILHAMENTO DE CAMPANHA
+// ----------------------------------------------------
+
+model World {
+  id          String   @id @default(uuid())
+  ownerId     String
+  owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name        String
+  slug        String   @unique
+  description String?
+  coverImage  String?  // Imagem ou gradiente de fundo customizado do projeto
+  whiteboardData String? @default("{}") // Estado serializado do quadro de nós, cards e conexões
+  
+  // Link único para compartilhamento do mundo inteiro (se gerado)
+  shareToken  String?  @unique
+  isPublic    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  pages       Page[]
+  cards       Card[]
+  cardTags    CardTag[]
+  templates   Template[]
+  maps        WorldMap[]
+  relations   PageRelation[]
+  shares      WorldShare[]
+  media       ProjectMedia[]
+  boards      Board[]
+
+  @@index([ownerId])
+}
+
+model WorldShare {
+  id              String   @id @default(uuid())
+  worldId         String
+  world           World    @relation(fields: [worldId], references: [id], onDelete: Cascade)
+  sharedWithEmail String
+  sharedWithUserId String?
+  sharedWithUser  User?    @relation(fields: [sharedWithUserId], references: [id], onDelete: SetNull)
+  role            String   @default("viewer") // "viewer", "player", "editor"
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([worldId, sharedWithEmail])
+}
+
+// ----------------------------------------------------
+// TEMPLATES COM CAMPOS ESTRUTURADOS
+// ----------------------------------------------------
+
+model Template {
+  id             String   @id @default(uuid())
+  worldId        String?
+  world          World?   @relation(fields: [worldId], references: [id], onDelete: Cascade)
+  name           String
+  description    String
+  category       String   // "world", "location", "language", "dnd-character-5e", "item", etc.
+  icon           String   @default("book")
+  defaultTags    String   @default("[]") // JSON Array
+  schemaFields   String   @default("[]") // JSON Array com PropertyDefinition
+  defaultContent String   @default("")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  pages Page[]
+}
+
+// ----------------------------------------------------
+// PÁGINAS DA WIKI E COMPARTILHAMENTO
+// ----------------------------------------------------
+
+model Page {
+  id              String   @id @default(uuid())
+  worldId         String
+  world           World    @relation(fields: [worldId], references: [id], onDelete: Cascade)
+  ownerId         String
+  owner           User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  title           String
+  slug            String
+
+  // Hierarquia de pastas e subpáginas infinitas
+  parentId        String?
+  parent          Page?    @relation("PageHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children        Page[]   @relation("PageHierarchy")
+
+  templateId      String?
+  template        Template? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  icon            String?
+  featuredImage   String?
+  
+  // Link único para compartilhamento direto de página
+  shareToken      String?  @unique
+
+  tags            String   @default("[]") // JSON Array de strings
+  properties      String   @default("{}") // JSON Object com valores dos campos do template
+  contentMarkdown String   @default("")
+  contentJson     String   @default("{}") // JSON Object do TipTap
+  isSecret        Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  outboundRelations PageRelation[]       @relation("SourceRelation")
+  inboundRelations  PageRelation[]       @relation("TargetRelation")
+  mapPins           MapPin[]
+  dndSheet          DndCharacterSheet?
+  shares            PageShare[]
+  assets            PageAsset[]
+
+  @@index([worldId, slug])
+  @@index([ownerId])
+}
+
+model PageShare {
+  id              String   @id @default(uuid())
+  pageId          String
+  page            Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  sharedWithEmail String
+  sharedWithUserId String?
+  sharedWithUser  User?    @relation(fields: [sharedWithUserId], references: [id], onDelete: SetNull)
+  role            String   @default("viewer") // "viewer", "editor"
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([pageId, sharedWithEmail])
+}
+
+// ----------------------------------------------------
+// RELAÇÕES DO MAPA MENTAL / GRAFO
+// ----------------------------------------------------
+
+model PageRelation {
+  id           String   @id @default(uuid())
+  worldId      String
+  world        World    @relation(fields: [worldId], references: [id], onDelete: Cascade)
+  sourcePageId String
+  sourcePage   Page     @relation("SourceRelation", fields: [sourcePageId], references: [id], onDelete: Cascade)
+  targetPageId String
+  targetPage   Page     @relation("TargetRelation", fields: [targetPageId], references: [id], onDelete: Cascade)
+  relationType String   // "parent-child", "mention", "property-link", "custom"
+  label        String?  // Ex: "Capital de", "Empunha", "Inimigo de"
+  createdAt    DateTime @default(now())
+
+  @@index([sourcePageId, targetPageId])
+}
+
+// ----------------------------------------------------
+// MAPAS E PINOS (14K DEEP ZOOM)
+// ----------------------------------------------------
+
+model WorldMap {
+  id                 String   @id @default(uuid())
+  worldId            String
+  world              World    @relation(fields: [worldId], references: [id], onDelete: Cascade)
+  title              String
+  subtitle           String?
+  category           String   @default("world") // "world", "region", "dungeon"
+  width              Int      @default(2400)
+  height             Int      @default(1600)
+  backgroundSvgTheme String   @default("world") // "world", "city", "dungeon"
+  originalImageUrl   String?
+  tilesBasePath      String?
+  parentMapId        String?
+  isSecret           Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  pins MapPin[]
+}
+
+model MapPin {
+  id          String   @id @default(uuid())
+  mapId       String
+  map         WorldMap @relation(fields: [mapId], references: [id], onDelete: Cascade)
+  x           Int
+  y           Int
+  title       String
+  description String?
+  category    String   @default("landmark")
+  color       String   @default("#38bdf8")
+  tags        String   @default("[]") // JSON Array
+  isSecret    Boolean  @default(false)
+  pageId      String?
+  page        Page?    @relation(fields: [pageId], references: [id], onDelete: SetNull)
+  nestedMapId String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([mapId])
+}
+
+// ----------------------------------------------------
+// FICHA D&D VIVA SINCRONIZADA
+// ----------------------------------------------------
+
+model DndCharacterSheet {
+  id            String   @id @default(uuid())
+  pageId        String   @unique
+  page          Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  characterName String
+  level         Int      @default(1)
+  hpMax         Int      @default(10)
+  hpCurrent     Int      @default(10)
+  attributes    String   @default("{}") // JSON: { for, des, con, int, sab, car }
+  spellSlots    String   @default("{}") // JSON: { 1: { total: 4, used: 1 }, ... }
+  inventory     String   @default("[]") // JSON: Array de itens vinculados
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// ----------------------------------------------------
+// ANEXOS DE MÍDIA (IMAGENS E VÍDEOS) DA PÁGINA
+// ----------------------------------------------------
+
+model PageAsset {
+  id           String   @id @default(uuid())
+  pageId       String
+  page         Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  filename     String
+  originalName String
+  mimeType     String   // "image/png", "image/jpeg", "video/mp4", etc.
+  mediaType    String   // "image" ou "video"
+  sizeBytes    Int
+  url          String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([pageId])
+  @@index([userId])
+}
+
+// ----------------------------------------------------
+// CARDS DA CAMPANHA (RECURSO INDEPENDENTE SEM SUBPÁGINAS)
+// ----------------------------------------------------
+
+model Card {
+  id              String      @id @default(uuid())
+  worldId         String
+  world           World       @relation(fields: [worldId], references: [id], onDelete: Cascade)
+  ownerId         String
+  owner           User        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  title           String
+  slug            String
+  category        String?     // Nome da tag ou categoria legada
+  tagId           String?
+  tag             CardTag?    @relation(fields: [tagId], references: [id], onDelete: SetNull)
+  icon            String?     @default("credit-card")
+  coverImage      String?
+  tags            String      @default("[]") // JSON Array
+  properties      String      @default("{}") // JSON Object
+  customFields    String      @default("[]") // JSON Array com linhas, colunas e definições de campos do contexto
+  contentMarkdown String      @default("")
+  contentJson     String      @default("{}")
+  isSecret        Boolean     @default(false)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  assets          CardAsset[]
+
+  @@index([worldId, slug])
+  @@index([ownerId])
+  @@index([tagId])
+}
+
+model CardTag {
+  id             String   @id @default(uuid())
+  worldId        String
+  world          World    @relation(fields: [worldId], references: [id], onDelete: Cascade)
+  name           String
+  color          String   @default("#38bdf8") // Código hexadecimal (#RRGGBB)
+  templateFields String   @default("[]")     // JSON Array com os campos e layout padrão da tag
+  defaultBanner  String?                     // Imagem de capa padrão da tag
+  defaultAvatar  String?                     // Avatar padrão da tag
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  cards     Card[]
+  templates CardTagTemplate[]
+
+  @@unique([worldId, name])
+  @@index([worldId])
+}
+
+model CardTagTemplate {
+  id             String   @id @default(uuid())
+  tagId          String
+  tag            CardTag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  name           String   // Nome customizado do template (ex: "Metrópole", "NPC Comerciante")
+  fields         String   @default("[]") // JSON Array com os campos CardCustomField[]
+  defaultBanner  String?
+  defaultAvatar  String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([tagId])
+}
+
+model CardAsset {
+  id           String   @id @default(uuid())
+  cardId       String
+  card         Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  filename     String
+  originalName String
+  mimeType     String
+  mediaType    String   // "image" ou "video"
+  sizeBytes    Int
+  url          String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([cardId])
+  @@index([userId])
+}
+
+// ----------------------------------------------------
+// FLUXO UNIVERSAL DE MÍDIAS DO PROJETO (ÁUDIO, VÍDEO E IMAGEM)
+// Padrão de recurso: [RECURSO]_[FERRAMENTA] (ex: banner_card, avatar_card, markdown_card, pagina_wiki)
+// ----------------------------------------------------
+
+model ProjectMedia {
+  id           String   @id @default(uuid())
+  projectId    String
+  project      World    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  originalName String
+  hash         String   // Identificador único / hash seguro
+  filename     String   // Nome salvo no disco (<hash>.<ext>)
+  format       String   // MIME type (ex: "image/png", "audio/mp3", "video/mp4")
+  mediaType    String   // "image" | "video" | "audio"
+  sizeBytes    Int      // Tamanho em bytes
+  resource     String   // Identificador [RECURSO]_[FERRAMENTA]
+  url          String   // Link público "/uploads/<filename>"
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([projectId, resource])
+  @@index([userId])
+}
+
+// ----------------------------------------------------
+// BOARDS (QUADROS DE RELAÇÕES E WHITEBOARD)
+// ----------------------------------------------------
+
+model Board {
+  id          String   @id @default(uuid())
+  worldId     String
+  world       World    @relation(fields: [worldId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  data        String   @default("{\"nodes\":[],\"edges\":[]}") // Estado serializado dos nós e arestas
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([worldId])
+}
+
+
+

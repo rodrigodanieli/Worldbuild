@@ -1,0 +1,197 @@
+import { Template } from "../models/template";
+
+export const DEFAULT_TEMPLATES: Template[] = [
+  {
+    id: "tpl-dnd-5e-character",
+    name: "Personagem de D&D 5ª Edição",
+    description: "Ficha viva compatível com D&D 5e e sincronizada com o aplicativo mobile.",
+    category: "dnd-character-5e",
+    icon: "user-check",
+    defaultTags: ["personagem", "dnd-5e"],
+    properties: [
+      {
+        id: "dnd_name",
+        name: "Nome do Personagem",
+        type: "text",
+        required: true,
+      },
+      {
+        id: "dnd_class",
+        name: "Classe",
+        type: "page-relation",
+        required: true,
+        relationFilter: {
+          requiredTags: ["classe"],
+        },
+      },
+      {
+        id: "dnd_level",
+        name: "Nível",
+        type: "number",
+        required: true,
+        defaultValue: 1,
+      },
+      {
+        id: "dnd_background",
+        name: "Origem / Antecedente",
+        type: "page-relation",
+        required: false,
+        relationFilter: {
+          requiredTags: ["origem"],
+        },
+      },
+      {
+        id: "dnd_race",
+        name: "Raça / Espécie",
+        type: "page-relation",
+        required: true,
+        relationFilter: {
+          requiredTags: ["raca"],
+        },
+      },
+      {
+        id: "dnd_attributes",
+        name: "Atributos Base",
+        type: "dnd-attributes",
+        required: true,
+        defaultValue: {
+          for: 10,
+          des: 10,
+          con: 10,
+          int: 10,
+          sab: 10,
+          car: 10,
+        },
+      },
+      {
+        id: "dnd_hp_max",
+        name: "Pontos de Vida Máximos",
+        type: "number",
+        required: true,
+        defaultValue: 10,
+      },
+      {
+        id: "dnd_hp_current",
+        name: "Pontos de Vida Atuais",
+        type: "number",
+        required: true,
+        defaultValue: 10,
+      },
+      {
+        id: "dnd_inventory",
+        name: "Inventário & Itens",
+        type: "page-relation",
+        required: false,
+        relationFilter: {
+          requiredTags: ["item"],
+        },
+      },
+    ],
+    defaultContent: `## História e Personalidade\n\nDescreva a trajetória, traços, ideais e defeitos do personagem aqui.\n\n## Notas do Mestre\n:::secret\nSegredos e ganchos de campanha conhecidos apenas pelo Mestre.\n:::`,
+  },
+  {
+    id: "tpl-location",
+    name: "Lugar / Região / Cidade",
+    description: "Template para estruturação de assentamentos, reinos, masmorras e continentes.",
+    category: "location",
+    icon: "compass",
+    defaultTags: ["lugar"],
+    properties: [
+      {
+        id: "loc_type",
+        name: "Tipo de Localidade",
+        type: "select",
+        required: true,
+        options: ["Reino", "Cidade", "Vila", "Masmorra", "Planície", "Ponto de Interesse"],
+        defaultValue: "Cidade",
+      },
+      {
+        id: "loc_ruler",
+        name: "Governante / Líder",
+        type: "page-relation",
+        required: false,
+        relationFilter: {
+          requiredTags: ["personagem", "npc"],
+        },
+      },
+      {
+        id: "loc_population",
+        name: "População Estimada",
+        type: "text",
+        required: false,
+      },
+      {
+        id: "loc_parent_region",
+        name: "Região Pertencente",
+        type: "page-relation",
+        required: false,
+        relationFilter: {
+          requiredTags: ["lugar"],
+        },
+      },
+    ],
+    defaultContent: `## Visão Geral\n\nDescreva a atmosfera, clima e aparência deste local.\n\n## Pontos de Interesse\n- Ponto 1\n- Ponto 2\n\n## Fações Atuantes\nListe as organizações presentes aqui.`,
+  },
+  {
+    id: "tpl-item",
+    name: "Item / Artefato Mágico",
+    description: "Template para armas, armaduras, itens mágicos e relíquias.",
+    category: "item",
+    icon: "shield",
+    defaultTags: ["item"],
+    properties: [
+      {
+        id: "item_rarity",
+        name: "Raridade",
+        type: "select",
+        required: true,
+        options: ["Comum", "Incomum", "Raro", "Muito Raro", "Lendário", "Artefato"],
+        defaultValue: "Comum",
+      },
+      {
+        id: "item_weight",
+        name: "Peso (kg/lb)",
+        type: "number",
+        required: false,
+        defaultValue: 1,
+      },
+      {
+        id: "item_cost",
+        name: "Preço Estimado (PO)",
+        type: "number",
+        required: false,
+      },
+      {
+        id: "item_requires_attunement",
+        name: "Requer Sintonização",
+        type: "checkbox",
+        required: false,
+        defaultValue: false,
+      },
+    ],
+    defaultContent: `## Propriedades & Efeitos\n\nDescreva os bônus, danos e propriedades mágicas do item.\n\n## Lore & Criação\nHistórico de quem forjou ou onde foi encontrado.`,
+  },
+  {
+    id: "tpl-language",
+    name: "Língua / Idioma",
+    description: "Template para idiomas, dialetos e sistemas de escrita.",
+    category: "language",
+    icon: "languages",
+    defaultTags: ["lingua"],
+    properties: [
+      {
+        id: "lang_script",
+        name: "Alfabeto / Escrita",
+        type: "text",
+        required: false,
+      },
+      {
+        id: "lang_speakers",
+        name: "Falantes Típicos",
+        type: "text",
+        required: false,
+      },
+    ],
+    defaultContent: `## Origem e Fonética\n\nComo essa língua soa e como se desenvolveu ao longo das eras.\n\n## Expressões Comuns\n- Expressão 1: Significado\n- Expressão 2: Significado`,
+  },
+];

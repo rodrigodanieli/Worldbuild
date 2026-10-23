@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "WorldBuild RPG Sheet",
+    "slug": "worldbuild-rpg-sheet",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "backgroundColor": "#0d0f14"
+    },
+    "android": {
+      "package": "com.worldbuild.companion",
+      "adaptiveIcon": {
+        "backgroundColor": "#0d0f14"
+      }
+    }
+  }
+}

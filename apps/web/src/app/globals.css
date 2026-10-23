@@ -1,0 +1,199 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #0f1117;
+  --foreground: #f3f4f6;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+  overflow-x: hidden;
+}
+
+/* Custom scrollbar para estilo dark fantasy */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #141721;
+}
+::-webkit-scrollbar-thumb {
+  background: #2a3042;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3e4763;
+}
+
+/* Estilos do Editor TipTap e Segredos DM */
+.hide-secrets .secret-block {
+  background-color: rgba(30, 41, 59, 0.4) !important;
+  border-color: rgba(71, 85, 105, 0.4) !important;
+  user-select: none !important;
+}
+.hide-secrets .secret-block .secret-content {
+  filter: blur(6px);
+  opacity: 0.15;
+  pointer-events: none;
+}
+.hide-secrets .secret-block::after {
+  content: "🔒 Informação confidencial oculta para jogadores";
+  display: block;
+  font-size: 11px;
+  color: #94a3b8;
+  font-style: italic;
+  margin-top: 4px;
+}
+
+/* Estilo para links de @menção */
+span[data-type="mention"] {
+  background-color: rgba(245, 158, 11, 0.12);
+  color: #fcd34d;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-weight: 500;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  cursor: pointer;
+}
+span[data-type="mention"]:hover {
+  background-color: rgba(245, 158, 11, 0.25);
+}
+
+/* TipTap placeholder */
+.tiptap p.is-editor-empty:first-child::before {
+  color: #64748b;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Estilos do Leaflet e Pinos */
+.leaflet-container {
+  background-color: #060911 !important;
+  font-family: inherit;
+}
+.custom-map-pin {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Notion-style Document & Typography */
+.prose h1 {
+  font-size: 1.85rem !important;
+  font-weight: 800 !important;
+  color: #ffffff !important;
+  letter-spacing: -0.025em !important;
+  margin-top: 1.75rem !important;
+  margin-bottom: 0.75rem !important;
+  line-height: 1.25 !important;
+}
+
+.prose h2 {
+  font-size: 1.45rem !important;
+  font-weight: 700 !important;
+  color: #f8fafc !important;
+  letter-spacing: -0.02em !important;
+  margin-top: 1.5rem !important;
+  margin-bottom: 0.5rem !important;
+  line-height: 1.3 !important;
+}
+
+.prose h3 {
+  font-size: 1.2rem !important;
+  font-weight: 600 !important;
+  color: #e2e8f0 !important;
+  margin-top: 1.25rem !important;
+  margin-bottom: 0.35rem !important;
+  line-height: 1.35 !important;
+}
+
+.prose p {
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+  line-height: 1.7 !important;
+  color: #cbd5e1 !important;
+}
+
+.prose ul:not([data-type="taskList"]) {
+  list-style-type: disc !important;
+  padding-left: 1.5rem !important;
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.prose ol {
+  list-style-type: decimal !important;
+  padding-left: 1.5rem !important;
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.prose li {
+  margin-top: 0.2rem !important;
+  margin-bottom: 0.2rem !important;
+  color: #e2e8f0 !important;
+}
+
+.prose code:not(pre code) {
+  background-color: rgba(245, 158, 11, 0.15) !important;
+  color: #fcd34d !important;
+  padding: 0.15rem 0.4rem !important;
+  border-radius: 0.25rem !important;
+  font-size: 0.85em !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  border: 1px solid rgba(245, 158, 11, 0.25) !important;
+}
+
+/* Notion-style Task List (Checklist) */
+ul[data-type="taskList"] {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0;
+}
+ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+ul[data-type="taskList"] li > label {
+  user-select: none;
+  cursor: pointer;
+  margin-top: 0.2rem;
+}
+ul[data-type="taskList"] li > label input[type="checkbox"] {
+  appearance: none;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 4px;
+  border: 1.5px solid #64748b;
+  background-color: #1e293b;
+  cursor: pointer;
+  display: grid;
+  place-content: center;
+  transition: all 0.15s ease;
+}
+ul[data-type="taskList"] li > label input[type="checkbox"]:checked {
+  background-color: #f59e0b;
+  border-color: #f59e0b;
+}
+ul[data-type="taskList"] li > label input[type="checkbox"]:checked::before {
+  content: "";
+  width: 0.5rem;
+  height: 0.5rem;
+  background-color: #0f1117;
+  clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+}
+ul[data-type="taskList"] li[data-checked="true"] > div {
+  text-decoration: line-through;
+  color: #64748b;
+}
+
+
+

@@ -1,0 +1,33 @@
+# Dependências e caches
+node_modules
+.pnpm-store
+.next
+dist
+.turbo
+out
+
+# Logs e arquivos de debug
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Controle de versão e IDEs
+.git
+.gitignore
+.github
+.vscode
+.idea
+
+# Scripts temporários de teste
+scratch-*
+tests
+
+# Capturas de tela (mantém apenas as que estão em public/)
+*.png
+!apps/web/public/**/*.png
+!apps/web/public/**/*.jpg
+!apps/web/public/**/*.jpeg
+!apps/web/public/**/*.svg
+!apps/web/public/**/*.ico

@@ -1,0 +1,20 @@
+services:
+  worldbuild:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: worldbuild:latest
+    container_name: worldbuild-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      - DATABASE_URL=file:/app/packages/database/prisma/dev.db
+    volumes:
+      # Persistência do banco de dados SQLite local
+      - ./packages/database/prisma/dev.db:/app/packages/database/prisma/dev.db
+      # Persistência de uploads de imagens e mídias
+      - ./apps/web/public/uploads:/app/apps/web/public/uploads
